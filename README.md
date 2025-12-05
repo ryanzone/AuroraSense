@@ -7,7 +7,7 @@ The dashboard identifies **critical shortages**, predicts **stockout dates**, an
 
 ---
 
-## Live Working Prototype (Snowflake Streamlit)**
+## Live Working Prototype (Snowflake Streamlit)
 
 Click below to open the hosted working model:
 
