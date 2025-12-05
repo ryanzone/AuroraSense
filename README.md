@@ -107,7 +107,7 @@ https://app.snowflake.com/nnvfrzc/vl98936/#/streamlit-apps/AURORA_INVENTORY.PUBL
 
 ```bash
 pip install streamlit pandas altair snowflake-snowpark-python
-streamlit run aurorasense_app.py
+streamlit run app.py
 ```
 
 Snowflake credentials required for live data.
