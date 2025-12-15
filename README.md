@@ -85,7 +85,7 @@ https://app.snowflake.com/nnvfrzc/vl98936/#/streamlit-apps/AURORA_INVENTORY.PUBL
 
 ![Dashboard Overview](https://github.com/ryanzone/AuroraSense/blob/main/ss/Screenshot%202025-12-06%20010233.png)
 
-![Dashboard Overview](https://github.com/ryanzone/AuroraSense/blob/main/ss/Screenshot%202025-12-06%20010255.png)
+![Dashboard Overview](https://github.com/ryanzone/AuroraSense/blob/main/ss/Screenshot%202025-12-15%20202059.png)
 
 ## **How to Use**
 
