@@ -253,62 +253,77 @@ else:
 st.subheader("AI-Generated Stock Summary")
 
 if st.button("Generate Summary"):
-    ai_summary = None
-
-    # Try AI SQL
-    try:
-        result = session.sql("""
-            SELECT SNOWFLAKE.CORTEX.COMPLETE(
-                'gpt-4o-mini',
-                'Summarize the inventory including critical, warning, and healthy items. ' ||
-                (SELECT LISTAGG(CONCAT(
-                    ITEM_NAME, ' at ', LOCATION_NAME, 
-                    ' (Risk: ', RISK_LEVEL, ', Days left: ', DAYS_OF_COVER, ')'), '; ')
-                FROM AURORA_INVENTORY.MAIN.STOCK_HEALTH)
-            ) AS SUMMARY
-        """).collect()
-
-        if result and "SUMMARY" in result[0]:
-            ai_summary = result[0]["SUMMARY"]
-
-    except Exception:
-        ai_summary = None
-
-
-    # Fallback AI Summary
-    if ai_summary is None:
-        critical = health_df[health_df["RISK_LEVEL"] == "CRITICAL"][["ITEM_NAME", "LOCATION_NAME"]].drop_duplicates()
-        warning = health_df[health_df["RISK_LEVEL"] == "WARNING"][["ITEM_NAME", "LOCATION_NAME"]].drop_duplicates()
-        healthy = health_df[health_df["RISK_LEVEL"] == "OK"][["ITEM_NAME", "LOCATION_NAME"]].drop_duplicates()
-
-        summary = f"""
-Inventory Summary
-Critical items: {len(critical)}
-Warning items: {len(warning)}
-Healthy items: {len(healthy)}
-
-Critical Risks:
-"""
-
-        for _, row in critical.iterrows():
-            summary += f"- {row['ITEM_NAME']} at {row['LOCATION_NAME']} (CRITICAL)\n"
-
-        summary += "\nWarning Risks:\n"
-        for _, row in warning.iterrows():
-            summary += f"- {row['ITEM_NAME']} at {row['LOCATION_NAME']} (WARNING)\n"
-
-        summary += "\nHealthy Inventory:\n"
-        for _, row in healthy.iterrows():
-            summary += f"- {row['ITEM_NAME']} at {row['LOCATION_NAME']} (HEALTHY)\n"
-
-        summary += """
-Recommended Actions:
-- Reorder critical items immediately.
-- Reorder warning items within 2–3 days.
-- Maintain healthy items and monitor fast-moving stock.
-"""
-
-        st.warning(summary)
-
+    if health_df.empty:
+        st.warning("No data available for the current filters to summarize.")
+        
     else:
-        st.success(ai_summary)
+        top_risks = health_df[health_df["RISK_LEVEL"] != "OK"].sort_values("DAYS_OF_COVER").head(30)
+        
+        data_context = top_risks.to_string(index=False, columns=["ITEM_NAME", "LOCATION_NAME", "RISK_LEVEL", "DAYS_OF_COVER"])
+        
+        loc_filter = selected_location if selected_location != "All" else "Global Inventory"
+        item_filter = selected_item if selected_item != "All" else "All Item Types"
+        
+        prompt = f"""
+        **Role:** You are a Senior Inventory Manager presenting a report.
+        **Tone:** Professional, direct, and focused on risk and action.
+        **Context:** Analyzing the inventory health for '{item_filter}' at '{loc_filter}'.
+        
+        **Data Provided (Top Risk Items):**
+        {data_context}
+        
+        **Your Summary Must Contain 3 Sections:**
+        
+        1.  **Executive Summary of Risk:** A one-paragraph narrative explaining the overall health (e.g., "The inventory is generally healthy, but 3 critical items require immediate attention.")
+        
+        2.  **Immediate Action Items (CRITICAL):** A bulleted list of the top 3 items with the lowest 'DAYS_OF_COVER'. State the Item, Location, and an imperative action (e.g., "IMMEDIATE REORDER: Item X at Warehouse Y").
+        
+        3.  **Long-Term Focus (WARNING & HEALTHY):** A brief statement on the general trend for warning items and one piece of strategic advice (e.g., "Warning items are manageable, but we must monitor Item Z which has the fastest consumption rate.")
+        
+        **Format the final output cleanly using Markdown headings and bolding.**
+        """
+
+        ai_summary = None
+        
+        try:
+            safe_prompt = prompt.replace("'", "''")
+            
+            # Using 'llama3-8b-8192' to prevent the previous "unavailable model" error
+            cmd = f"SELECT SNOWFLAKE.CORTEX.COMPLETE('llama3-8b-8192', '{safe_prompt}') as RESPONSE"
+            
+            result = session.sql(cmd).collect()
+            if result and "RESPONSE" in result[0]:
+                ai_summary = result[0]["RESPONSE"]
+
+        except Exception:
+            ai_summary = None
+
+
+        if ai_summary is None:
+            critical = health_df[health_df["RISK_LEVEL"] == "CRITICAL"][["ITEM_NAME", "LOCATION_NAME"]].drop_duplicates()
+            warning = health_df[health_df["RISK_LEVEL"] == "WARNING"][["ITEM_NAME", "LOCATION_NAME"]].drop_duplicates()
+            healthy = health_df[health_df["RISK_LEVEL"] == "OK"][["ITEM_NAME", "LOCATION_NAME"]].drop_duplicates()
+            
+            summary = f"""
+**Inventory Summary (Fallback)**
+
+The AI failed to generate a professional summary, so here is a direct data breakdown:
+
+| Status | Count |
+|:---|:---|
+| Critical | {len(critical)} |
+| Warning | {len(warning)} |
+| Healthy | {len(healthy)} |
+
+---
+**Critical Risks:**
+"""
+            for _, row in critical.iterrows():
+                summary += f"- **{row['ITEM_NAME']}** at {row['LOCATION_NAME']} (CRITICAL)\n"
+
+            summary += "\n**Recommended Action:** Immediately review procurement for all critical items listed above."
+
+            st.warning(summary)
+
+        else:
+            st.success(ai_summary)
