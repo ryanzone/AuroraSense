@@ -47,11 +47,6 @@ https://app.snowflake.com/nnvfrzc/vl98936/#/streamlit-apps/AURORA_INVENTORY.PUBL
 * Filter by **location**, **item**, and **chart type**
 * Dashboard auto-updates dynamically
 
-### **6. AI-Generated Inventory Summary**
-
-* Summarizes critical risks
-* Lists actionable recommendations
-* Uses Snowflake Cortex with fallback logic
 
 ---
 
@@ -85,7 +80,6 @@ https://app.snowflake.com/nnvfrzc/vl98936/#/streamlit-apps/AURORA_INVENTORY.PUBL
 
 ![Dashboard Overview](https://github.com/ryanzone/AuroraSense/blob/main/ss/Screenshot%202025-12-06%20010233.png)
 
-![Dashboard Overview](https://github.com/ryanzone/AuroraSense/blob/main/ss/Screenshot%202025-12-15%20202059.png)
 
 ## **How to Use**
 
@@ -111,11 +105,3 @@ streamlit run app.py
 ```
 
 Snowflake credentials required for live data.
-
-
-## 🧠 **AI Summary Logic**
-
-The app uses:
-
-1. **Snowflake Cortex GPT-4o-mini**
-2. Custom fallback summarizer if AI query fails
